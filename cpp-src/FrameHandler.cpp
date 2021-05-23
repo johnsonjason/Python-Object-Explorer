@@ -25,12 +25,7 @@ std::string _CallMethod;
 std::string _AuditFilter;
 std::string QueryStr;
 
-BYTE OldFunction[] = {
-    0x48, 0x89, 0x5C, 0x24, 0x08,
-    0x48, 0x89, 0x6C, 0x24, 0x10,
-    0x48, 0x89, 0x74, 0x24, 0x18
-};
-
+std::vector<BYTE> OldFunction;
 std::vector<unsigned char> JumpHook;
 
 //
@@ -124,7 +119,7 @@ __declspec(dllexport) PyFrameObject* GetFrame(PyThreadState* tstate, PyCodeObjec
     DWORD OldProtection = NULL;
 
     VirtualProtect(NewFrameFunc, 1, PAGE_EXECUTE_READWRITE, &OldProtection);
-    memcpy(NewFrameFunc, OldFunction, sizeof(OldFunction));
+    memcpy(NewFrameFunc, OldFunction.data(), OldFunction.size());
     VirtualProtect(NewFrameFunc, 1, OldProtection, &OldProtection);
 
     //
@@ -275,4 +270,45 @@ __declspec(dllexport) PyFrameObject* GetFrame(PyThreadState* tstate, PyCodeObjec
     }
 
     return CurrentFramePtr;
+}
+
+//
+// Initialize the PyFrame_New hook and have it run once
+// FrameAddr - the offset for PyFrame_New from the base module
+// DirAddr - the offset for PyObject_Dir from the base module
+//
+void InitializeFramer(DWORD_PTR FrameAddr, DWORD_PTR DirAddr, std::string module) {
+    //
+    // Initialize the Python 3.6.8 Runtime
+    //
+
+    Py_Initialize();
+
+    // PyFrame_New()
+    NewFrameFunc = (FrameFunc*)((DWORD_PTR)GetModuleHandleA(module.c_str()) + FrameAddr);
+    // PyObject_Dir()
+    GetObjDir = (PyObjDir*)((DWORD_PTR)GetModuleHandleA(module.c_str()) + DirAddr);
+
+    DWORD OldProtection = 0;
+
+    //
+    // Redirect the external runtime's PyFrame_New() to our hook. NewFrameFunc is a PyFrame_New routine initialized as a global variable
+    //
+
+    _Executable = true;
+
+    JumpHook = Convert64ToJmp((DWORD_PTR)GetFrame);
+    OldFunction.resize(JumpHook.size());
+    memcpy(OldFunction.data(), NewFrameFunc, JumpHook.size());
+
+    VirtualProtect(NewFrameFunc, 1, PAGE_EXECUTE_READWRITE, &OldProtection);
+    memcpy(NewFrameFunc, &JumpHook[0], JumpHook.size());
+    VirtualProtect(NewFrameFunc, 1, OldProtection, &OldProtection);
+
+    //
+    // First initial code run, wait until a frame is received
+    //
+    while (_Executable) {
+        Sleep(10);
+    }
 }
