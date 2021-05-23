@@ -23,15 +23,11 @@
 #include "C:\\Program Files\\Python36\\include\\Python.h"
 #include "C:\\Program Files\\Python36\\include\\frameobject.h"
 #include "C:\\Program Files\\Python36\\include\\pystate.h"
-#include "C:\\Program Files\\Python36\\include\\sysmodule.h"
-#include "C:\\Program Files\\Python36\\include\\methodobject.h"
 #define _DEBUG
 #else
 #include "C:\\Program Files\\Python36\\include\\Python.h"
 #include "C:\\Program Files\\Python36\\include\\frameobject.h"
 #include "C:\\Program Files\\Python36\\include\\pystate.h"
-#include "C:\\Program Files\\Python36\\include\\sysmodule.h"
-#include "C:\\Program Files\\Python36\\include\\methodobject.h"
 #endif
 
 #pragma comment(lib, "ws2_32.lib")
