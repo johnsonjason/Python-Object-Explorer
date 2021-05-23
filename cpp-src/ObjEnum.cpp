@@ -56,10 +56,18 @@ PySet EnumerateObject(std::string ObjectPath, std::string BaseName, bool UseGlob
     return { ReturnObject, ReturnObjectList };
 }
 
+//
+// Enumerate a tree for an object directly by its address
+//
 std::string EnumerateDirectObjectTree(PyObject* DirectObject) {
     std::string TreeNode;
-    PyObject* DirectObjectDir = GetObjDir(DirectObject);
 
+    //
+    // Get the object's directory via the foreign runtimes PyObject_Dir(), which returns a list
+    // Iterate over the list and then get the actual address of each object via their internal tp_getattro
+    // Although realistically in most cases you can just use PyObject_GetAttr, this is old code
+    //
+    PyObject* DirectObjectDir = GetObjDir(DirectObject);
     for (Py_ssize_t i = 0; i < Py_SIZE(DirectObjectDir); i++) {
         PyObject* ListItem = PyList_GetItem(DirectObjectDir, i);
         if (ListItem != nullptr) {
@@ -71,4 +79,18 @@ std::string EnumerateDirectObjectTree(PyObject* DirectObject) {
     }
 
     return TreeNode;
+}
+
+//
+// Return the pointer to the object from EnumerateObject
+//
+PyObject* EnumerateObjectReal(std::string ObjectPath, std::string BaseName, bool UseGlobals) {
+    return std::get<0>(EnumerateObject(ObjectPath, BaseName, UseGlobals));
+}
+
+//
+// Return the list of an object
+//
+PyObject* EnumerateObjectOutput(std::string ObjectPath, std::string BaseName, bool UseGlobals) {
+    return std::get<1>(EnumerateObject(ObjectPath, BaseName, UseGlobals));
 }
