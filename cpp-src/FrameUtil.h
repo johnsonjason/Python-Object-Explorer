@@ -1,6 +1,12 @@
 #pragma once
 #include "pch.h"
 
+enum ValueType {
+    ValueTypeInt = 0,
+    ValueTypeDouble = 1,
+    ValueTypeString = 2
+};
+
 typedef struct ATTRIB_VALUE {
     int Type = 0;
     void* Value = nullptr;
@@ -23,6 +29,9 @@ extern SOCKET GlobalSocket;
 // The socket used to communicate with the client
 extern SOCKET GlobalReceiver;
 
+extern PyObject* SwapRoot;
+extern std::string AttributeToSwap;
+extern PyObject* ToSwap;
 
 // PyFrame_New()
 extern FrameFunc* NewFrameFunc;
@@ -50,3 +59,4 @@ void GlobalTree();
 
 void GetObjectValue(PyObject* ArgObject, std::string ObjectType, std::string ObjectPath);
 void SetObjectValue(PyObject* ArgObject, std::string ObjectType, std::string ObjectBase, ATTRIB_VALUE* Value);
+void SwapObjectValue(PyObject* Swappable, std::string Name, PyObject* Value);
