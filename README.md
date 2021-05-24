@@ -66,3 +66,6 @@ the objects used in ObjExp's handlers contain either borrowed references or new 
 
 Not all objects have attributes, accessing one without attributes will cause crashes. There is one situational fix when working with classes containing `__abstract__` where their types are set to `Unknown` to prevent ObjExp from accessing those and crashing.
 Etc.
+
+* A state of the globals and a PyThreadState to retrieve the interpreter state for accessing modules must be retrieved once via the PyThreadState_GET or PyFrame_New hooks. This will allow the GUI to appear
+* Eventually support will allow consistently accessing objects in the trees without constant evaluation, but right now to synchronize with the foreign runtime and prevent invalid access attempts, this is how matters are currently handled
