@@ -40,7 +40,7 @@ an object with the specified name in the Value field is found in a frame from a 
 
 ## Personal Disclaimer
 
-There **are bugs**. Initially I wrote this very quickly for a statically compiled Python program I was reverse engineering without regard for memory safety. For example,
+There **are bugs**. Initially I wrote this very quickly for a statically compiled Python program I was reverse engineering without regard for memory safety or efficient/clean code. For example,
 the objects used in ObjExp's handlers contain either borrowed references or new references which do not get incremented or decremented for their reference count. Meaning that memory will never be freed. Currently the functionality is not called enough in a way that it would lead to massive resource consumption.
 
 Not all objects have attributes, accessing one without attributes will cause crashes. There is one situational fix when working with classes containing `__abstract__` where their types are set to `Unknown` to prevent ObjExp from accessing those and crashing.
