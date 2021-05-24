@@ -33,6 +33,7 @@ The last line of output is from an object within the modules that had a list obj
 * Create a subdirectory called ObjExp
 * Place the source/header files and the vcxproj files from cpp-src in it
 * Install [Python 3.6.8 Runtime](https://www.python.org/downloads/release/python-368/) to C:\Program Files\
+* Skip the next two steps if you do not wish to make changes to the source
 * If you wish to make changes such as evaluating interpreter objects instead of objects in a statically compiled runtime like Nuitka, refer to Line 20 in dllmain.cpp and plug-in the offsets for PyFrame_New (parameter 1), PyObject_Dir (parameter 2), the name of the module where those offsets are (parameter 3), and set nuitka (parameter 4) to false.
 * If you wish to get console I/O, then uncomment lines 15-18 in dllmain.cpp, and 301. Uncomment 300 depending on the circumstances of a pre-existing console.
 * Compile
@@ -60,8 +61,8 @@ an object with the specified name in the Value field is found in a frame from a 
 
 ## Personal Disclaimer
 
-There **are bugs**. Initially I wrote this very quickly for a statically compiled Python program I was reverse engineering without regard for memory safety or efficient/clean code. For example,
-the objects used in ObjExp's handlers contain either borrowed references or new references which do not get incremented or decremented for their reference count. Meaning that memory will never be freed. Currently the functionality is not called enough in a way that it would lead to massive resource consumption.
+There **are bugs**. Initially I wrote this very quickly and hastily for a statically compiled Python program I was reverse engineering without regard for memory safety or efficient/clean code. For example,
+the objects used in ObjExp's handlers contain either borrowed references or new references which do not get incremented or decremented via Py_XINCREF/Py_XDECREF for their reference count. Meaning that memory will never be freed. Currently the functionality is not called enough in a way that it would lead to massive resource consumption.
 
 Not all objects have attributes, accessing one without attributes will cause crashes. There is one situational fix when working with classes containing `__abstract__` where their types are set to `Unknown` to prevent ObjExp from accessing those and crashing.
 Etc.
