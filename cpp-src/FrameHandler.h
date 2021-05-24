@@ -4,6 +4,7 @@
 
 
 typedef PyFrameObject* FrameFunc(PyThreadState* tstate, PyCodeObject* code, PyObject* globals, PyObject* locals);
+typedef PyThreadState* TstateFunc(void);
 typedef PyObject* PyObjDir(PyObject* obj);
 
 typedef std::tuple<std::string, std::string, bool> ExecutionQuery;
@@ -38,5 +39,4 @@ extern std::string _AuditFilter;
 // QueryStr is the filter string that will be set first, and then will be located when Debug mode is enabled, without debug mode it is inactive
 extern std::string QueryStr;
 
-__declspec(dllexport) PyFrameObject* GetFrame(PyThreadState* tstate, PyCodeObject* code, PyObject* globals, PyObject* locals);
-void InitializeFramer(DWORD_PTR FrameAddr, DWORD_PTR DirAddr, std::string module);
+void InitializeFramer(DWORD_PTR FrameAddr, DWORD_PTR DirAddr, std::string module, bool nuitka);
