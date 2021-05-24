@@ -12,7 +12,7 @@ With the explorer, it will use IPC via sockets to send views of tree nodes for o
 
 * Globals (A tree of all global attributes)
 * Modules (A tree of all directly imported modules)
-* Debug Context (In-hook filter for getting an object as it is on the current frame in `PyFrame_New`/Interpreted/Pypperoni or `PyThreadState_Get`/Nuitka)
+* Debug Context (In-hook filter for getting an object as it is on the current frame in `PyFrame_New`/Interpreted or `PyThreadState_Get`/Nuitka)
 
 The tree nodes will not have [+] expansion symbols immediately until clicked, this is so a fresh state of an object's attributes can always be retrieved.
 
@@ -22,6 +22,26 @@ Example usage:
 In this example, the debug was filtering for "bool" objects and the Debug Context tree represents the attributes of the filtered bool object.
 
 The last line of output is from an object within the modules that had a list object named `__all__`
+
+## How to build
+
+### C++
+
+* Visual Studio 2019
+* Create a project directory called ObjExp
+* Move the ObjExp.sln file from cpp-src in the new directory
+* Create a subdirectory called ObjExp
+* Place the source/header files and the vcxproj files from cpp-src in it
+* Install [Python 3.6.8 Runtime](https://www.python.org/downloads/release/python-368/) to C:\Program Files\
+* If you wish to make changes such as evaluating interpreter objects instead of objects in a statically compiled runtime like Nuitka, refer to Line 20 in dllmain.cpp and plug-in the offsets for PyFrame_New (parameter 1), PyObject_Dir (parameter 2), the name of the module where those offsets are (parameter 3), and set nuitka (parameter 4) to false.
+* If you wish to get console I/O, then uncomment lines 15-18 in dllmain.cpp, and 301. Uncomment 300 depending on the circumstances of a pre-existing console.
+* Compile
+
+### C#
+
+* Visual Studio 2019
+* In the PyperLoader directory, click PyperLoader.sln
+* Compile
 
 ## How to use GUI
 
