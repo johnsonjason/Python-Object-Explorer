@@ -11,6 +11,7 @@ int _Executable;
 int _FrameDebug;
 int _AuditMode;
 int _CallMode;
+bool Nuitka = false;
 
 _ATTRIB_VALUE SetValue = { 0 };
 
@@ -119,7 +120,23 @@ void DoCall(PyThreadState* tstate) {
 	//
 	// Constantly locate the object in each frame's evaluation stack until it is found, and then try to call it
 	//
-	std::string AttribType = Py_TYPE(*(tstate->frame->f_valuestack))->tp_name;
+	if (tstate->frame->f_valuestack == nullptr) {
+		return;
+	}
+
+	const char* AuditAttr = nullptr;
+	if (Nuitka) {
+		if ((((PyObject*)(tstate->frame->f_valuestack))->ob_type) == nullptr ||
+			(((PyObject*)(tstate->frame->f_valuestack))->ob_type->tp_name) == nullptr) {
+			return;
+		}
+		AuditAttr = (((PyObject*)(tstate->frame->f_valuestack))->ob_type->tp_name);
+	}
+	else {
+		AuditAttr = Py_TYPE((tstate->frame->f_valuestack[0]))->tp_name;
+	}
+
+	std::string AttribType = AuditAttr;
 
 	//
 	// Convert the object name, tp_name to lower case
@@ -151,17 +168,33 @@ void DoAudit(PyThreadState* tstate) {
 	//
 	// Check if the value stack pointer is null before further accessing it
 	//
-	if (*(tstate->frame->f_valuestack) == nullptr) {
-		return;
-	}
-	//
-	// Check if the object tp_name is not set, before continuing access
-	//
-	if (Py_TYPE(*(tstate->frame->f_valuestack))->tp_name == nullptr) {
+	if (tstate->frame == nullptr) {
 		return;
 	}
 
-	std::string AttribType = Py_TYPE(*(tstate->frame->f_valuestack))->tp_name;
+	if (tstate->frame->f_valuestack == nullptr) {
+		return;
+	}
+
+	const char* AuditAttr = nullptr;
+
+	if (Nuitka) {
+		if ((((PyObject*)(tstate->frame->f_valuestack))->ob_type) == nullptr ||
+			(((PyObject*)(tstate->frame->f_valuestack))->ob_type->tp_name) == nullptr ) {
+			return;
+		}
+		AuditAttr = (((PyObject*)(tstate->frame->f_valuestack))->ob_type->tp_name);
+	}
+	else {
+		AuditAttr = Py_TYPE((tstate->frame->f_valuestack[0]))->tp_name;
+	}
+
+	if (AuditAttr == nullptr) {
+		return;
+	}
+
+	std::string AttribType = AuditAttr;
+
 	std::transform(AttribType.begin(), AttribType.end(), AttribType.begin(),
 		[](unsigned char c) { return std::tolower(c); });
 
@@ -172,15 +205,32 @@ void DoAudit(PyThreadState* tstate) {
 	// Check if the tp_name matches the audit filter
 	//
 	if (AttribType.find(_AuditFilter) != std::string::npos) {
-		std::cout << "OBJECT AUDIT: " << Py_TYPE(tstate->frame->f_valuestack[0])->tp_name << std::endl;
+		std::cout << "OBJECT AUDIT: " << AuditAttr << std::endl;
 	}
 
 	return;
 }
 
 void DoDebug(PyThreadState* tstate) {
-	if (*(tstate->frame->f_valuestack) != nullptr) {
-		std::string AttribType = Py_TYPE(*(tstate->frame->f_valuestack))->tp_name;
+	if ((tstate->frame) != nullptr) {
+
+		if (tstate->frame->f_valuestack == nullptr) {
+			return;
+		}
+
+		const char* AuditAttr = nullptr;
+		if (Nuitka) {
+			if ((((PyObject*)(tstate->frame->f_valuestack))->ob_type) == nullptr ||
+				(((PyObject*)(tstate->frame->f_valuestack))->ob_type->tp_name) == nullptr) {
+				return;
+			}
+			AuditAttr = (((PyObject*)(tstate->frame->f_valuestack))->ob_type->tp_name);
+		}
+		else {
+			AuditAttr = Py_TYPE((tstate->frame->f_valuestack[0]))->tp_name;
+		}
+
+		std::string AttribType = AuditAttr;
 
 		std::transform(AttribType.begin(), AttribType.end(), AttribType.begin(),
 			[](unsigned char c) { return std::tolower(c); });
@@ -196,7 +246,13 @@ void DoDebug(PyThreadState* tstate) {
 			//
 			// Get a tree of the object, send the tree, and then spin, waiting for remote socket to cancel debugging
 			//
-			std::string Sender = EnumerateDirectObjectTree(*(tstate->frame->f_valuestack));
+			std::string Sender;
+			if (Nuitka) {
+				Sender = EnumerateDirectObjectTree((((PyObject*)(tstate->frame->f_valuestack))));
+			}
+			else {
+				Sender = EnumerateDirectObjectTree(*(tstate->frame->f_valuestack));
+			}
 			send(GlobalReceiver, Sender.c_str(), Sender.size(), 0);
 			while (_FrameDebug) {
 				Sleep(50);
@@ -360,13 +416,14 @@ void InitializeFramer(DWORD_PTR FrameAddr, DWORD_PTR DirAddr, std::string module
 	Py_Initialize();
 
 	if (nuitka) {
+		Nuitka = true;
 		GetObjDir = (PyObjDir*)GetProcAddress(GetModuleHandleA(module.c_str()), "PyObject_Dir");
 		GetTstate = (TstateFunc*)GetProcAddress(GetModuleHandleA(module.c_str()), "PyThreadState_Get");
 		if (GetObjDir == nullptr || GetTstate == nullptr) {
 			return;
 		}
 		DWORD OldProtection = 0;
-        
+
 		//
 		// Redirect the external runtime's PyFrame_New() to our hook. NewFrameFunc is a PyFrame_New routine initialized as a global variable
 		//
